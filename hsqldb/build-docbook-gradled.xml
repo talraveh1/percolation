@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?><project basedir=".." default="gen-docs" name="hsqldb-ant-docbook_gradled">
+  <property file="build/local-docbook.properties"/>
+  <property file="build/docbook.properties"/>
+  <property name="oasis.stylesheet.url" value="http://docbook.sourceforge.net/release/xsl-ns/1.78.1"/>
+  <property name="xml.catalog.verbosity" value="0"/>
+  <property name="xml.catalog.files" value="${basedir}/stylesheets/rng-catalog.xml"/>
+  <property name="xml.catalog.prefer" value="public"/>
+  <property name="xml.catalog.allowPI" value="yes"/>
+  <property name="xml.catalog.staticCatalog" value="yes"/>
+  <property name="ivy.dep.file" value="build/ivy.xml"/>
+  <property name="ivy.settings.file" value="build/ivysettings.xml"/>
+  <property name="distro.baseurl" value="http://hsqldb.org/doc/2.0"/>
+  <property name="docoutput.path" value="doc"/>
+  <property name="javac.debug" value="true"/>
+  <property name="xmlvalidation.threadstacksize" value="1M"/>
+  <property name="dbxirng.url" value="https://docbook.org/xml/5.0/rng/docbookxi.rng"/>
+  <property name="html.path" value="stylesheets/html.xsl"/>
+  <property name="chunk.path" value="stylesheets/chunk.xsl"/>
+  <property name="fo.path" value="stylesheets/fo.xsl"/>
+  <property name="nsstylebase.url" value="UNSET_STYLEBASE"/>
+  <property name="dbcentx.url" value="https://docbook.org/xml/4.5/dbcentx.mod"/>
+  <target depends="clean-docs, gen-docs" name="regen-docs" description="Clean and regen project DocBook docs.  N.b this wipes javadocs too!"/>
+  <property name="_for.automation.blurb" value="If you want to automate the antcalls and you don't mind using Ant-contrib or Antelope, you can use one of their 'for' tasks with a DirSet."/>
+  <target name="gen-docs">
+    <fail>You must implement your own "gen-docs" target by editing
+"build-docbook.xml" or overriding it in your own build file which imports
+"build-docbook.xml".
+Your "gen-docs" target must depend on -gen-docs-setup, do an "antcall" of
+"docbook-transform" for each doc.name, then call -gen-docs-complete.
+
+${_for.automation.blurb}</fail>
+  </target>
+  <target name="validate-docs">
+    <fail>You must implement your own "validate-docs" target
+by editing "build-docbook.xml" or overriding it in your own build file which
+imports "build-docbook.xml".
+Your "validate-docs" target must do an "antcall" of "validate-doc" for each
+doc.name.
+
+${_for.automation.blurb}</fail>
+  </target>
+  <target depends="refresh-verbatim" name="-gen-docs-setup"/>
+  <target name="-gen-docs-complete">
+    <copy todir="${docoutput.path}">
+      <fileset excludes="**/.*/**, **/*.txt, **/entities/**, apidocs/**,                          **/*.xml, **/*.java, **/*.sql, **/*.cfg, **/*.css,                          **/*.ent, **/*.rc, **/*.html, **/*.properties" dir="doc-src"/>
+    </copy>
+    <fixcrlf excludes="**/.*/**" eol="crlf" destdir="${docoutput.path}" includes="verbatim/**/*.txt, images/**/*.txt" srcdir="doc-src" encoding="UTF-8"/>
+    <fixcrlf excludes="**/.*/**, verbatim/**, images/**, **/entities/**,                        */*.txt, apidocs/**, readme-template.txt" eol="crlf" destdir="${docoutput.path}" includes="**/*.txt" srcdir="doc-src" encoding="UTF-8"/>
+    <fixcrlf excludes="**/.*/**" eol="lf" destdir="${docoutput.path}" includes="verbatim/**/*.xml, images/**/*.xml" srcdir="doc-src" encoding="UTF-8"/>
+    <fixcrlf excludes="**/.*/**, verbatim/**, images/**, **/entities/**,                        *.xml, */*.xml" eol="lf" destdir="${docoutput.path}" includes="**/*.xml" srcdir="doc-src" encoding="UTF-8"/>
+    <fixcrlf excludes="**/.*/**, **/entities/**, apidocs/**" eol="lf" destdir="${docoutput.path}" includes="**/*.java, **/*.sql, **/*.cfg, **/*.css,                        **/*.rc, **/*.properties" srcdir="doc-src" encoding="UTF-8"/>
+    <copy todir="${docoutput.path}">
+      <fileset excludes="**/.*/**, **/entities/**, apidocs/**" includes="**/*.html" dir="doc-src"/>
+      <filterchain>
+        <expandproperties/>
+        <fixcrlf eol="lf" encoding="UTF-8"/>
+      </filterchain>
+    </copy>
+  </target>
+  <target unless="-dbtransform-skip" depends="-fop-setup" name="docbook-transform" description="Generate DocBook output for specified source doc">
+    <fail unless="doc.name" message="Ant property 'doc.name' is required by target 'docbook-transform'."/>
+    <available file="${html.path}" property="_htmlstyle.present" type="file"/>
+    <available file="${chunk.path}" property="_chunkstyle.present" type="file"/>
+    <available file="${fo.path}" property="_fostyle.present" type="file"/>
+    <fail unless="_htmlstyle.present" message="DocBook 5 HTML style sheet missing: ${html.path}"/>
+    <fail unless="_chunkstyle.present" message="DocBook 5 Chunk HTML style sheet missing: ${chunk.path}"/>
+    <fail unless="_fostyle.present" message="DocBook 5 FO style sheet missing: ${fo.path}"/>
+    <dependset>
+      <srcfileset excludes="**/.*/**, *_lic.txt, readme*, index.html" includes="*.*, entities/**, images/**, verbatim/**" dir="doc-src"/>
+      <targetfileset dir="tmp/doc-work"/>
+      <targetfileset excludes="apidocs/**, readme*, index.html, *_lic.txt" dir="${docoutput.path}"/>
+    </dependset>
+    <dependset>
+      <srcfileset excludes="**/.*/**" dir="doc-src/${doc.name}"/>
+      <targetfileset dir="${docoutput.path}/${doc.name}"/>
+      <targetfilelist files="${doc.name}.fo" dir="tmp/doc-work/${doc.name}"/>
+    </dependset>
+    <dependset>
+      <srcfilelist files="${doc.name}.fo" dir="tmp/doc-work/${doc.name}"/>
+      <targetfilelist files="${doc.name}.pdf" dir="${docoutput.path}/${doc.name}"/>
+    </dependset>
+    <condition property="_htmlgen.skip" value="transform.skip">
+      <istrue value="${html.skip}"/>
+    </condition>
+    <condition property="_chunkgen.skip" value="transform.skip">
+      <istrue value="${chunk.skip}"/>
+    </condition>
+    <condition property="_fogen.skip" value="transform.skip">
+      <istrue value="${fo.skip}"/>
+    </condition>
+    <condition property="_pdfgen.skip" value="pdfgen.skip">
+      <istrue value="${pdf.skip}"/>
+    </condition>
+    <available file="${docoutput.path}/${doc.name}/${doc.name}.html" property="_htmlgen.skip" type="file" value="transform.skip"/>
+    <available file="${docoutput.path}/${doc.name}/index.html" property="_chunkgen.skip" type="file" value="transform.skip"/>
+    <available file="${docoutput.path}/${doc.name}/${doc.name}.fo" property="_fogen.skip" type="file" value="transform.skip"/>
+    <available file="${docoutput.path}/${doc.name}/${doc.name}.pdf" property="_pdfgen.skip" type="file" value="pdfgen.skip"/>
+    <property name="_htmlgen.skip" value="dummy"/>
+    <property name="_chunkgen.skip" value="dummy"/>
+    <property name="_fogen.skip" value="dummy"/>
+    <property name="_pdfgen.skip" value="dummy"/>
+    <antcall inheritrefs="true" target="-transform">
+      <param name="style.path" value="${html.path}"/>
+      <param name="output.base" value="${docoutput.path}/${doc.name}/${doc.name}.html"/>
+      <param name="html.format" value="true"/>
+      <param name="${_htmlgen.skip}" value="true"/>
+    </antcall>
+    <antcall inheritrefs="true" target="-transform">
+      <param name="style.path" value="${chunk.path}"/>
+      <param name="output.base" value="${docoutput.path}/${doc.name}/dummy.html"/>
+      <param name="html.format" value="true"/>
+      <param name="${_chunkgen.skip}" value="true"/>
+    </antcall>
+    <mkdir dir="doc/${doc.name}"/>
+    <fixcrlf eol="lf" includes="*.html" srcdir="doc/${doc.name}" encoding="UTF-8"/>
+    <antcall inheritrefs="true" target="-transform">
+      <param name="style.path" value="${fo.path}"/>
+      <param name="output.base" value="tmp/doc-work/${doc.name}/${doc.name}.fo"/>
+      <param name="fop.format" value="true"/>
+      <param name="${_fogen.skip}" value="true"/>
+    </antcall>
+    <antcall inheritrefs="true" target="-fop">
+      <param name="${_pdfgen.skip}" value="true"/>
+    </antcall>
+  </target>
+  <target unless="pdfgen.skip" name="-fop">
+    <fop basedir="doc-src/${doc.name}" outfile="${docoutput.path}/${doc.name}/${doc.name}.pdf" format="application/pdf" fofile="tmp/doc-work/${doc.name}/${doc.name}.fo"/>
+  </target>
+  <target unless="transform.skip" depends="-ivy-setup" name="-transform">
+    <fail unless="distro.baseurl" message="Ant property 'distro.baseurl' is required by target '-transform'."/>
+    <fail unless="doc.name" message="Ant property 'doc.name' is required by target '-transform'."/>
+    <available file="${style.path}" property="_sheet.present" type="file"/>
+    <fail unless="_sheet.present" message="Missing style sheet '${style.path}'"/>
+    <available file="doc-src/${doc.name}/${doc.name}.xml" property="_srcxml.present" type="file"/>
+    <fail unless="_srcxml.present" message="Missing DocBook source document 'doc-src/${doc.name}/${doc.name}.xml'"/>
+    <mkdir dir="tmp/doc-work/${doc.name}"/>
+    <tstamp>
+      <format pattern="yyyy-MM-dd' 'HH:mm:ssZ" property="_timestamp"/>
+    </tstamp>
+    <condition else="Private build @ ${_timestamp}" property="_buildstamp" value="${doc.pubtime}">
+      <isset property="doc.pubtime"/>
+    </condition>
+    <echo file="tmp/doc-work/${doc.name}/dynamic.ent">&lt;!--Dynamically generated Entity Values loaded by a catalog for document
+'${doc.name}' at ${_timestamp} --&gt;
+
+&lt;!ENTITY doc_basename "${doc.name}"&gt;
+&lt;!ENTITY distro_baseurl "${distro.baseurl}"&gt;
+&lt;!ENTITY timestamp "${_buildstamp}"&gt;
+</echo>
+    <xslt basedir="doc-src/${doc.name}" in="doc-src/${doc.name}/${doc.name}.xml" style="${style.path}" classpathref="xalan.cpref" out="${output.base}">
+      <xmlcatalog id="cat.ref" classpathref="xalan.cpref">
+        <dtd location="${dbcentx.url}" publicId="-//OASIS/ENTITIES DocBook Character Entities V4.5//EN"/>
+        <entity location="${nsstylebase.url}/html/docbook.xsl" publicId="${oasis.stylesheet.url}/html/docbook.xsl"/>
+        <entity location="${nsstylebase.url}/html/chunk.xsl" publicId="${oasis.stylesheet.url}/html/chunk.xsl"/>
+        <entity location="${nsstylebase.url}/fo/docbook.xsl" publicId="${oasis.stylesheet.url}/fo/docbook.xsl"/>
+        <entity location="tmp/doc-work/${doc.name}/dynamic.ent" publicId="-//HSQLDB/ENTITIES/DocSpecificDynamicEntities"/>
+      </xmlcatalog>
+      <param expression="1" name="use.extensions"/>
+      <param expression="1" name="admon.graphics"/>
+      <param expression="../images/db/" name="admon.graphics.path"/>
+      <param expression=".png" name="admon.graphics.extension"/>
+      <param expression="1" name="css.decoration"/>
+      <param expression="1" name="annotation.support"/>
+      <param expression="1" name="navig.graphics"/>
+      <param expression="../images/db/" name="navig.graphics.path"/>
+      <param expression="1" name="table.borders.with.css"/>
+      <param expression="1" name="callouts.gaphics"/>
+      <param expression="../images/db/callouts/" name="callouts.gaphics.path"/>
+      <param expression=".png" name="graphic.default.extension"/>
+      <param expression=".png" name="callouts.gaphics.extension"/>
+      <param expression="../docbook.css" name="html.stylesheet" if="html.format"/>
+      <param expression="1" unless="html.format" name="shade.verbatim"/>
+      <param expression="ISO-8859-1" name="textdata.default.encoding"/>
+      <param expression="1" name="use.id.as.filename"/>
+      <param expression="1" name="variablelist.as.table"/>
+      <param expression="1" name="index.on.type"/>
+      <param expression="0" name="body.start.indent" if="fop.format"/>
+      <param expression="1pt" name="table.cell.border.thickness" if="fop.format"/>
+      <param expression="0" name="html.cellspacing" if="html.format"/>
+      <param expression="0" name="tablecolumns.extension"/>
+      <param expression=".png" name="navig.graphics.extension"/>
+      <param expression="1" name="fop1.extensions" if="fop.format"/>
+      <param expression="0" name="chunk.section.depth"/>
+      <outputproperty name="encoding" value="UTF-8"/>
+      <outputproperty name="indent" value="yes"/>
+    </xslt>
+  </target>
+  <target name="clean-docs" description="Remove all derived doc artifacts">
+    <delete dir="tmp/doc-work"/>
+    <delete dir="${docoutput.path}"/>
+  </target>
+  <target depends="-ivy-setup" name="-fop-setup">
+    <taskdef classname="org.apache.fop.tools.anttasks.Fop" name="fop" classpathref="fop.cpref"/>
+  </target>
+  <target unless="_ivysettings.present" name="-ensure-ivysettings">
+    <copy file="build/ivysettings-sample.xml" tofile="build/ivysettings.xml"/>
+    <echo>Just created a local 'ivysettings.xml' file for you.
+Customize this as you wish and/or set Ivy properties (or any other
+docbook-specific local build properties) in a 'local-docbook.properties'
+file.</echo>
+  </target>
+  <target depends="-validation-setup, -ivy-setup" unless="validation.skip" name="validate-doc" description="Validate specified DocBook source document">
+    <fail unless="doc.name" message="Ant property 'doc.name' is required by target 'validate'."/>
+    <pathconvert property="msvjar.file" refid="xcsde-rngval-jar.cpref"/>
+    <java fork="true" classname="com.admc.xml.ResolvingSchematronDriver" classpath="${msvjar.file}" resultproperty="exec.val" errorproperty="err" classpathref="xcsde-rngval-deps.cpref" outputproperty="out" dir="doc-src/${doc.name}">
+      <sysproperty value="${xml.catalog.verbosity}" key="xml.catalog.verbosity"/>
+      <sysproperty value="${xml.catalog.files}" key="xml.catalog.files"/>
+      <sysproperty value="${xml.catalog.prefer}" key="xml.catalog.prefer"/>
+      <sysproperty value="${xml.catalog.allowPI}" key="xml.catalog.allowPI"/>
+      <sysproperty value="${xml.catalog.staticCatalog}" key="xml.catalog.staticCatalog"/>
+      <jvmarg value="-Xss${xmlvalidation.threadstacksize}"/>
+      <arg value="-v"/>
+      <arg value="${dbxirng.url}"/>
+      <arg value="${doc.name}.xml"/>
+    </java>
+    <condition property="_do-abort" value="DUMMY">
+      <not>
+        <equals arg2="${exec.val}" arg1="0"/>
+      </not>
+    </condition>
+    <fail if="_do-abort">Exiting due to Schematron JVM exit value ${exec.val}.
+JVM stdout: ---------------------------------------------------
+${out}
+JVM stderr: ---------------------------------------------------
+${err}</fail>
+  </target>
+  <target name="refresh-verbatim" description="Update files under doc-src/verbatim">
+    <copy todir="doc-src/verbatim" preservelastmodified="true">
+      <fileset dir=".">
+        <present targetdir="doc-src/verbatim"/>
+      </fileset>
+    </copy>
+  </target>
+  <target name="-validation-setup">
+    <fail message="Something is wrong.  '-validation-setup' is abstract"/>
+  </target>
+  <target depends="-gen-docs-setup, -fop-setup" name="dumplibs" description="Dump FO and PDF libs">
+    <pathconvert property="cp2" refid="fop.cpref"/>
+    <echo>FOP classpath (${cp2})</echo>
+    <pathconvert property="cp1" refid="xalan.cpref"/>
+    <echo>Xalan classpath (${cp1})</echo>
+  </target>
+  <target name="-ivy-setup"/>
+</project>
