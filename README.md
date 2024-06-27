@@ -2,9 +2,7 @@
 
 Optimized simulation software for running experiments on percolation graph models.
 
-Basic Instructions
-
-### This document is under construction!
+## Basic Instructions
 
 Basic execution (Windows 11):
 
