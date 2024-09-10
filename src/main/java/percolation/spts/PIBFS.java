@@ -126,6 +126,7 @@ public class PIBFS implements SPT {
     }
 
     private void enqueueActivated(int pn, int dir) {
+        //noinspection DuplicatedCode // cba to extract to a new util class or make SPT abstract
         int[] epn = g.epn[dir], se = this.se[dir];
         int i;
         for (i = sei[dir]; i < se.length && epn[se[i]] <= pn; i++)

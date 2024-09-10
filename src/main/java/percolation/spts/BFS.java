@@ -68,7 +68,6 @@ public class BFS implements SPT {
     }
 
     @Override public boolean neighbor(Queue q, int src, int dst, int dist) {
-//        if (dists[dst] <= dist) return false;
         dists[dst] = dist;
         dec.enqueue(q, dst);
         return true;

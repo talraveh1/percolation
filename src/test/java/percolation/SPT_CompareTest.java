@@ -19,7 +19,8 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SuppressWarnings("NewClassNamingConvention") public class SPT_CompareTest {
+@SuppressWarnings("NewClassNamingConvention")
+public class SPT_CompareTest {
 
     private static RemoteStream out;
 
@@ -61,24 +62,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
     }
 
     private static Stream<Arguments> args(MakeSptArg create) {
-//        return IntStream.range(1, 100).mapToObj(i
-//                -> args(i, 2304, 45, 100, 100, 1, create));
-                return Stream.of(
-//                        args(17, 3, 0, 100, 100, 1, create));
-                        IntStream.range(1, 100).mapToObj(i
-                                -> args(i, 3, 0, 100, 100, 1, create)),
-                        IntStream.range(1, 10).mapToObj(i
-                                -> args(i, 10, 0, 100, 100, 1, create)),
-                        IntStream.range(0, 5).mapToObj(i -> switch (i) {
-                            // avoid eager evaluation creating many threads in the parallel implementation
-                            case 0 -> args(2013, 3, 0, 100, 100, 1, create);
-                            case 1 -> args(1, 144, 0, 100, 100, 1, create);
-                            case 2 -> args(2, 144, 0, 100, 100, 1, create);
-                            case 3 -> args(3, 640, 45, 100, 100, 5, create);
-                            case 4 -> args(4, 1152, 60, 100, 100, 20, create);
-                            case 5 -> args(4, 1152, 48, 100, 100, 1, create);
-                            default -> throw new IllegalStateException("Unexpected value: " + i);
-                        })).flatMap(s -> s);
+        return Stream.of(
+                IntStream.range(1, 100).mapToObj(i
+                        -> args(i, 3, 0, 100, 100, 1, create)),
+                IntStream.range(1, 10).mapToObj(i
+                        -> args(i, 10, 0, 100, 100, 1, create)),
+                IntStream.range(0, 5).mapToObj(i -> switch (i) {
+                    // avoid eager evaluation creating too many threads in the parallel implementation
+                    case 0 -> args(2013, 3, 0, 100, 100, 1, create);
+                    case 1 -> args(1, 144, 0, 100, 100, 1, create);
+                    case 2 -> args(2, 144, 0, 100, 100, 1, create);
+                    case 3 -> args(3, 640, 45, 100, 100, 5, create);
+                    case 4 -> args(4, 1152, 60, 100, 100, 20, create);
+                    case 5 -> args(5, 1152, 48, 100, 100, 1, create);
+                    default -> throw new IllegalStateException("Unexpected value: " + i);
+                })).flatMap(s -> s);
     }
 
     @BeforeAll

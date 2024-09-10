@@ -81,6 +81,7 @@ public class IBFS extends BFS {
     // if dist(v2) > dist(v1) + 1 (w.l.o.g.) dist(v2) is updated to dist(v1) + 1 and v2 is enqueued
     // in order to update the rest of the graph
     protected void enqueueActivated(int pn, int dir) {
+        //noinspection DuplicatedCode // cba to extract to a new util class or make SPT abstract
         int[] epn = g.epn[dir], se = this.se[dir];
         int i;
         for (i = sei[dir]; i < se.length && epn[se[i]] <= pn; i++)
